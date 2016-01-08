@@ -74,6 +74,22 @@ class Profile extends Model {
 */
 class Me extends Profile {
     static get groupName() { return 'me';}
+
+    getTracks(market = 'US', limit = 20, offset = 0) {
+        let config = {
+            id: 'me',
+            market: market,
+            limit: limit,
+            offset: offset,
+            type: 'tracks'
+        };
+        let builder = new Builder(Me);
+        builder.config = config;
+        return builder.getByKey('saved-tracks', config).then(page => {
+            this._albums = page.elements;
+            return page;
+        });
+    }
 }
 Creator.addFactory('Profile', Profile);
 Creator.addFactory('Me', Profile);

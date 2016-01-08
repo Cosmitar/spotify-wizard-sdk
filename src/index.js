@@ -174,6 +174,30 @@ Artist.find('74ASZWbe4lXaubB36ztrGX')
     });
 });
 
+// ------------------------------------------------
+// FOLLOW A PLAYLIST
+// @see https://developer.spotify.com/web-api/follow-playlist/
+
+// ------------------------------------------------
+// UNFOLLOW A PLAYLIST
+// @see https://developer.spotify.com/web-api/unfollow-playlist/
+
+// ------------------------------------------------
+// SAVE TRACKS FOR USER
+// @see https://developer.spotify.com/web-api/save-tracks-user/
+
+// ------------------------------------------------
+// GET USER'S SAVED TRACKS
+// @see https://developer.spotify.com/web-api/get-users-saved-tracks/
+OAUTH('user-library-read');
+Profile.findMe()
+.then(me => {
+    me.getTracks()
+    .then(page=> {
+        console.log(page);
+    });
+});
+
 
 Artist.where('aerosmith', {limit:2})
 .then(page => {

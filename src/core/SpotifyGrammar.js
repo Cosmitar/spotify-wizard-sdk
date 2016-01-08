@@ -126,6 +126,17 @@ class SpotifyGrammar {
         return grammar;
     }
 
+    savedTracks(grammar) {
+        grammar.url = `/${ this.from }/tracks?` +
+            `country=${ this.where.market }` +
+            `&limit=${ this.page.limit }` +
+            `&offset=${ this.page.offset }`;
+        grammar.getItems = (response) => { return response.items; };
+        grammar.getPageInfo = (response) => { return response; };
+        grammar.getKey = (item) => { return 'tracks'; };
+        return grammar;
+    }
+
     relatedArtists(grammar) {
         grammar.url = `/${ this.from }/${ this.where.id }` +
             `/related-artists`;
