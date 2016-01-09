@@ -1,9 +1,10 @@
 'use strict';
 import Grammar from './SpotifyGrammar';
 
-class QueryBuilder extends Grammar {
+class QueryBuilder {
     constructor() {
-        super();
+        //super();
+        this.grammar = new Grammar;
         /*@todo document this parameters*/
         this.operation = 'select';//select|insert|update|remove =>by default GET|PUT|POST|DELETE
         //this.fields = '*';//always
@@ -14,7 +15,7 @@ class QueryBuilder extends Grammar {
         this.url = '';
         this.method = this._METHODS[this.operation];
         this.payload;
-        //
+        //interface methods
         this.getItems = ()=> {};
         this.getPageInfo = ()=> {};
         this.getKey = ()=> {};
@@ -25,37 +26,88 @@ class QueryBuilder extends Grammar {
     }
 
     update() {
-        Object.assign(this, this.lastPreparation());
+        getInterface(this.lastPreparation);
     }
 
-    prepareEntityQuery() {
-        Object.assign(this, super.getEntityQuery());
-        this.lastPreparation = super.getEntityQuery;
+    getGrammarParams() {
+        return {
+            from: this.from,
+            where: this.where,
+            page: this.page
+        };
     }
 
-    prepareManyEntitiesQuery() {
-        Object.assign(this, super.getManyEntitiesQuery());
-        this.lastPreparation = super.getManyEntitiesQuery;
+    setInterface(handler) {
+        this.lastPreparation = handler;
+        Object.assign(
+            this,
+            handler.apply(this.grammar, [this.getGrammarParams()])
+        );
     }
 
-    prepareSearchQuery() {
-        Object.assign(this, super.getSearchQuery());
-        this.lastPreparation = super.getSearchQuery;
+    prepareSearch() {
+        this.method = this._METHODS.select;
+        this.setInterface(this.grammar.getSearch);
     }
 
-    prepareQueryByKey() {
-        Object.assign(this, super.getQueryByKey());
-        this.lastPreparation = super.getQueryByKey;
+    prepareSelectEntity() {
+        this.method = this._METHODS.select;
+        this.setInterface(this.grammar.getSelectEntity);
     }
 
-    prepareWriteEntityQuery() {
-        Object.assign(this, super.getWriteEntityQuery());
-        this.lastPreparation = super.getWriteEntityQuery;
+    prepareInsertEntity() {
+        this.method = this._METHODS.insert;
+        this.setInterface(this.grammar.getWriteEntityQuery);
     }
 
-    prepareWriteQueryByKey() {
-        Object.assign(this, super.getWriteQueryByKey());
-        this.lastPreparation = super.getWriteQueryByKey;
+    prepareUpdateEntity() {
+        this.method = this._METHODS.update;
+        this.setInterface(this.grammar.getUpdateEntity);
+    }
+
+    prepareRemoveEntity() {
+        this.method = this._METHODS.remove;
+        this.setInterface(this.grammar.getRemoveEntity);
+    }
+
+    prepareSelectManyEntities() {
+        this.method = this._METHODS.select;
+        this.setInterface(this.grammar.getSelectManyEntities);
+    }
+
+    prepareInsertManyEntities() {
+        this.method = this._METHODS.insert;
+        this.setInterface(this.grammar.getInsertManyEntities);
+    }
+
+    prepareUpdateManyEntities() {
+        this.method = this._METHODS.update;
+        this.setInterface(this.grammar.getUpdateManyEntities);
+    }
+
+    prepareRemoveManyEntities() {
+        this.method = this._METHODS.remove;
+        this.setInterface(this.grammar.getRemoveManyEntities);
+    }
+
+    prepareSelectByKey() {
+        this.method = this._METHODS.select;
+        this.setInterface(this.grammar.getSelectByKey);
+    }
+
+    prepareInsertByKey() {
+        this.method = this._METHODS.insert;
+        this.setInterface(this.grammar.getInsertByKey);
+    }
+
+    prepareUpdateByKey() {
+        this.method = this._METHODS.update;
+        this.setInterface(this.grammar.getUpdateByKey);
+    }
+
+    prepareRemoveByKey() {
+        this.method = this._METHODS.remove;
+        this.setInterface(this.grammar.getRemoveByKey);
     }
 }
 
