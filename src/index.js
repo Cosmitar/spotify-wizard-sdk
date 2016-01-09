@@ -1,5 +1,6 @@
 import Artist from './entities/Artist';
 import Album from './entities/Album';
+import Playlist from './entities/Playlist';
 import Browse from './entities/Browse';
 import {Profile, Me} from './entities/Profile';
 import Session from './services/Session';
@@ -173,11 +174,26 @@ Artist.find('74ASZWbe4lXaubB36ztrGX')
         console.log(response);
     });
 });
-
+*/
 // ------------------------------------------------
 // FOLLOW A PLAYLIST
 // @see https://developer.spotify.com/web-api/follow-playlist/
-
+OAUTH('playlist-modify-public');
+//OAUTH('playlist-modify-private');
+/*Profile.findMe()
+.then(me => {*/
+Playlist.find('2v3iNvBX8Ay1Gt2uXtUKUT', 'jmperezperez')
+    .then(playlist => {
+        playlist.follow().then(response => {
+            console.log(response);
+        });
+        /*me.follow(playlist)
+        .then(response => {
+            console.log(response);
+        });*/
+    });
+/*});*/
+/*
 // ------------------------------------------------
 // UNFOLLOW A PLAYLIST
 // @see https://developer.spotify.com/web-api/unfollow-playlist/

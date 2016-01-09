@@ -115,6 +115,12 @@ class SpotifyParams {
         * @type {string='en_US'}
         */
         this.locale = params.locale || 'en_US';
+
+        /**
+        * The user's Spotify user ID.
+        * @type {string}
+        */
+        this.user_id = params.user_id || '';
     }
 }
 //@NOTE here can use reducers to retrieve proper parameters for different requests.

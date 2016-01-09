@@ -18,5 +18,4 @@ class Track extends Model {
 }
 
 Creator.addFactory('Track', Track);
-Creator.addFactory('track', Track);
 export default Track;

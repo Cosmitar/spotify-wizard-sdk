@@ -37,18 +37,27 @@ class Profile extends Model {
     }
 
     static follow(param) {
-        return this._socialAction('follow', param);
+        let config = this._getSocialConfig(param);
+        let builder = this.me();
+        builder.config = config;
+        return builder.insertByKey('follow', config);
     }
 
     static unfollow(param) {
-        return this._socialAction('unfollow', param);
+        let config = this._getSocialConfig(param);
+        let builder = this.me();
+        builder.config = config;
+        return builder.removeByKey('unfollow', config);
     }
 
     static isFollowing(param) {
-        return this._socialAction('is-following', param);
+        let config = this._getSocialConfig(param);
+        let builder = this.me();
+        builder.config = config;
+        return builder.getByKey('is-following', config);
     }
 
-    static _socialAction(action, param) {
+    static _getSocialConfig(param) {
         let type;
         let ids;
         if (param.length !== undefined) {
@@ -62,9 +71,7 @@ class Profile extends Model {
             type,
             ids
         };
-        let builder = this.me();
-        builder.config = config;
-        return builder.getByKey(action, config);
+        return config;
     }
 
 }
@@ -94,4 +101,4 @@ class Me extends Profile {
 Creator.addFactory('Profile', Profile);
 Creator.addFactory('Me', Profile);
 
-module.exports ={Profile, Me};
+module.exports = {Profile, Me};
