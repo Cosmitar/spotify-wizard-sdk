@@ -3,6 +3,7 @@ import Model from './../core/Model';
 import Creator from './../core/Creator';
 import Artist from './Artist';
 import Track from './Track';
+import Builder from './../core/Builder';
 
 class Album extends Model {
 
@@ -23,15 +24,14 @@ class Album extends Model {
     }
 
     get tracks() {
-        let retVal = [];
+        let tracksCollection = [];
         if (this.original) {
-            let trackCollection = [];
-            for (let trackData of this.original.tracks.items) {
-                trackCollection.push(new Track(trackData));
-            }
-            retVal = trackCollection;
+            tracksCollection = Builder.hydrate(
+                this.original.tracks.items,
+                ()=> { return 'track'; }
+            );
         }
-        return retVal;
+        return tracksCollection;
     }
 
     get artists() {

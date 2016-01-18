@@ -15,8 +15,12 @@ class Profile extends Model {
         return ['albums', 'tracks'];
     }
 
-    static get groupName() { return 'users'; }
-    static get singleName() { return 'user'; }
+    static get groupName() {
+        return 'users';
+    }
+    static get singleName() {
+        return 'user';
+    }
 
     static me() {
         let builder = new Builder(Me);
@@ -27,34 +31,79 @@ class Profile extends Model {
         return this.me().getEntity();
     }
 
+    /**
+    * Get the current user’s followed artists.
+    * Config accepts: type, limit, after
+    * Authorization required
+    * @param {object=} config See https://developer.spotify.com/web-api/get-followed-artists/
+    */
     static following(config = {}) {
-        let localConfig = {
-            type: 'artist' //currently only artist is supported by endpoint
-        };
+        let vars = Object.assign({
+            type: 'artist' // currently only artist is supported by endpoint
+        }, config);
         let builder = this.me();
-        builder.config = Object.assign(config, localConfig);
-        return builder.getByKey('following', config);
+        builder.query
+            .id('get-user-followed-artists')
+            .select()
+            .from('me')
+            .field('following')
+            .where(vars);
+        return builder.build();
     }
 
-    static follow(param) {
-        let config = this._getSocialConfig(param);
+    /**
+    * Add the current user as a follower of one or more artists or other Spotify users.
+    * Config accepts: type, ids
+    * Authorization required
+    * @param {object=} config See https://developer.spotify.com/web-api/follow-artists-users/
+    */
+    static follow(config) {
+        let vars = this._getSocialConfig(config);
         let builder = this.me();
-        builder.config = config;
-        return builder.insertByKey('follow', config);
+        builder.query
+            .id('user-follow-actions')
+            .insert()
+            .into('me')
+            .field('following')
+            .where(vars);
+        return builder.build();
     }
 
-    static unfollow(param) {
-        let config = this._getSocialConfig(param);
+    /**
+    * Remove the current user as a follower of one or more artists or other Spotify users.
+    * Config accepts: type, ids
+    * Authorization required
+    * @param {object=} config See https://developer.spotify.com/web-api/unfollow-artists-users/.
+    */
+    static unfollow(config) {
+        let vars = this._getSocialConfig(config);
         let builder = this.me();
-        builder.config = config;
-        return builder.removeByKey('unfollow', config);
+        builder.query
+            .id('user-follow-actions')
+            .delete()
+            .from('me')
+            .field('following')
+            .where(vars);
+        return builder.build();
     }
 
-    static isFollowing(param) {
-        let config = this._getSocialConfig(param);
+    /**
+    * Check to see if the current user is following one or more artists or other Spotify users.
+    * Config accepts: type, ids
+    * Authorization required
+    * @param {object=} config See https://developer.spotify.com/web-api/check-current-user-follows/.
+    */
+    static amIFollowing(config) {
+        let vars = this._getSocialConfig(config);
         let builder = this.me();
-        builder.config = config;
-        return builder.getByKey('is-following', config);
+        builder.query
+            .id('user-follow-actions')
+            .select()
+            .from('me')
+            .field('following')
+            .field('contains')
+            .where(vars);
+        return builder.build();
     }
 
     static _getSocialConfig(param) {
@@ -62,7 +111,7 @@ class Profile extends Model {
         let ids;
         if (param.length !== undefined) {
             type = param[0].type;
-            ids = (param.map(item => { return item.id; })).join(',');
+            ids = (param.map(item => item.id)).join(',');
         } else {
             type = param.constructor.singleName;
             ids = param.id;
@@ -80,7 +129,9 @@ class Profile extends Model {
 * Profile class representing current user.
 */
 class Me extends Profile {
-    static get groupName() { return 'me';}
+    static get groupName() {
+        return 'me';
+    }
 
     getTracks(market = 'US', limit = 20, offset = 0) {
         let config = {
@@ -101,4 +152,4 @@ class Me extends Profile {
 Creator.addFactory('Profile', Profile);
 Creator.addFactory('Me', Profile);
 
-module.exports = {Profile, Me};
+module.exports = { Profile, Me };

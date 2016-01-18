@@ -32,18 +32,18 @@ class Artist extends Model {
     * @see https://developer.spotify.com/web-api/get-artists-top-tracks/
     * @return {Promise}
     */
-    getTopTracks(country) {
-        let config = {
-            id: this.id,
-            market: country,
-            type: 'tracks'
+    getTopTracks(country = 'US') {
+        let vars = {
+            country
         };
         let builder = new Builder(Artist);
-        builder.config = config;
-        return builder.getByKey('artists-top-tracks', config).then(tracks => {
-            this._topTracks = tracks;
-            return this._topTracks;
-        });
+        builder.query
+            .id('artists-top-tracks')
+            .select()
+            .from('artists', this.id)
+            .field('top-tracks')
+            .where(vars);
+        return builder.build();
     }
 
     /**
@@ -57,32 +57,30 @@ class Artist extends Model {
     * @return {Promise}
     */
     getAlbums(album_type = 'album', market = 'US', limit = 20, offset = 0) {
-        let config = {
-            id: this.id,
-            album_type: album_type,
-            market: market,
-            limit: limit,
-            offset: offset,
-            type: 'albums'
+        let vars = {
+            album_type,
+            market,
+            limit,
+            offset
         };
         let builder = new Builder(Artist);
-        builder.config = config;
-        return builder.getByKey('artists-albums', config).then(page => {
-            this._albums = page.elements;
-            return page;
-        });
+        builder.query
+            .id('artists-albums')
+            .select()
+            .from('artists', this.id)
+            .field('albums')
+            .where(vars);
+        return builder.build();
     }
 
     getRelatedArtists() {
-        let config = {
-            id: this.id
-        };
         let builder = new Builder(Artist);
-        builder.config = config;
-        return builder.getByKey('related-artists', config).then(artistsCollection => {
-            this._artists = artistsCollection;
-            return artistsCollection;
-        });
+        builder.query
+            .id('artist-related-artists')
+            .select()
+            .from('artists', this.id)
+            .field('related-artists');
+        return builder.build();
     }
 }
 

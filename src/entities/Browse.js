@@ -1,10 +1,6 @@
 'use strict';
 import Model from './../core/Model';
-import Creator from './../core/Creator';
 import Builder from './../core/Builder';
-import Playlist from './Playlist';
-import Album from './Album';
-import Category from './Category';
 
 class Browse extends Model {
     static get groupName() {
@@ -17,14 +13,18 @@ class Browse extends Model {
     * Authorization required
     * @param {object=} config See https://developer.spotify.com/web-api/get-list-featured-playlists/
     */
-    static getFeaturedPlaylists(config = {}) {
-        let localConfig = {
-            type: 'playlists'
+    static getFeaturedPlaylists(locale, country, timestamp, limit, offset) {
+        const vars = {
+            locale, country, timestamp, limit, offset
         };
-        let builder = new Builder(Browse);
-        builder.config = Object.assign(config, localConfig);
-        // How to expose response value: message?
-        return builder.getByKey('featured-playlists', config);
+        const builder = new Builder(Browse);
+        builder.query
+            .id('browse-featured-playlists')
+            .select()
+            .from('browse')
+            .field('featured-playlists')
+            .where(vars);
+        return builder.build();
     }
 
     /**
@@ -33,13 +33,18 @@ class Browse extends Model {
     * Authorization required
     * @param {object=} config See https://developer.spotify.com/web-api/get-list-new-releases/.
     */
-    static getNewAlbumReleases(config = {}) {
-        let localConfig = {
-            type: 'albums'
+    static getNewAlbumReleases(country, limit, offset) {
+        const vars = {
+            country, limit, offset
         };
-        let builder = new Builder(Browse);
-        builder.config = Object.assign(config, localConfig);
-        return builder.getByKey('new-releases', config);
+        const builder = new Builder(Browse);
+        builder.query
+            .id('browse-new-releases')
+            .select()
+            .from('browse')
+            .field('new-releases')
+            .where(vars);
+        return builder.build();
     }
 
     /**
@@ -48,13 +53,18 @@ class Browse extends Model {
     * Authorization required
     * @param {object=} config See https://developer.spotify.com/web-api/get-list-categories/
     */
-    static getCategories(config = {}) {
-        let localConfig = {
-            type: 'categories'
+    static getCategories(locale, country, limit, offset) {
+        const vars = {
+            locale, country, limit, offset
         };
-        let builder = new Builder(Browse);
-        builder.config = Object.assign(config, localConfig);
-        return builder.getByKey('categories', config);
+        const builder = new Builder(Browse);
+        builder.query
+            .id('browse-categories')
+            .select()
+            .from('browse')
+            .field('categories')
+            .where(vars);
+        return builder.build();
     }
 
     /**
@@ -65,13 +75,18 @@ class Browse extends Model {
     * @param {object=} config See https://developer.spotify.com/web-api/get-categorys-playlists/
     */
     static getCategoryPlaylists(category_id = '', config = {}) {
-        let localConfig = {
-            id: category_id,
-            type: 'playlists'
-        };
+        let vars = Object.assign({
+            category_id
+        }, config);
         let builder = new Builder(Browse);
-        builder.config = Object.assign(config, localConfig);
-        return builder.getByKey('get-categorys-playlists', config);
+        builder.query
+            .id('browse-playlist-category')
+            .select()
+            .from('browse')
+            .from('categories', category_id)
+            .field('playlists')
+            .where(vars);
+        return builder.build();
     }
 }
 

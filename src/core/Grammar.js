@@ -1,73 +1,118 @@
 'use strict';
-import Grammar from './Grammar';
 
-class SpotifyGrammar extends Grammar {
-    getEntity(qBuilder) {
-        qBuilder.processor.getItems = response=> response;
+class SpotifyGrammar {
+    /**
+    * @deprecated
+    */
+    get _METHODS() {
+        return { select: 'GET', insert: 'PUT', update: 'POST', delete: 'DELETE' };
     }
 
-    getManyEntities(qBuilder) {
-        // first entity name on the tree
-        let ref = qBuilder.entitiesTree.keys().next().value;
-        qBuilder.processor.getItems = response=> response[ref];
+    buildPath(entitiesTree) {
+        let path = '';
+        entitiesTree.forEach((value, key)=> {
+            path += `/${ key }` +
+                (value ? `/${ value }` : '');
+        });
+        return path;
     }
 
-    artistsAlbums(qBuilder) {
-        qBuilder.processor.getPageInfo = response=> response;
+    buildFields(fields) {
+        let path = '';
+        fields.forEach(value=> {
+            path += `/${ value }`;
+        });
+        return path;
     }
 
-    artistsTopTracks(qBuilder) {
-        qBuilder.processor.getItems = response=> response.tracks;
+    buildVars(variables) {
+        let vars = '';
+        let glue;
+        variables.forEach((value, key)=> {
+            glue = vars !== '' ? '&' : '';
+            vars += value !== undefined ? `${glue}${key}=${value}` : '';
+        });
+        return vars;
     }
 
-    artistRelatedArtists(qBuilder) {
-        qBuilder.processor.getItems = response=> response.artists;
+    /**
+    *
+    */
+    compileSelect(qBuilder) {
+        let queryHook = this._key2Method(qBuilder.queryKey);
+        // URL
+        let url = this.buildPath(qBuilder.entitiesTree);
+        url += this.buildFields(qBuilder.fields);
+        url += '?' + this.buildVars(qBuilder.variables.reduce(queryHook));
+        // limit??
+        qBuilder.url = url;
+
+        // METHOD
+        qBuilder.method = 'GET'; // this._METHODS[qBuilder.operation];
+
+        // PAYLOAD??
+        qBuilder.payload = null;
+
+        // PROCESSOR
+        qBuilder.processor.getItems = response=> response.items;
+        qBuilder.processor.getPageInfo = response=> response.page;
+        qBuilder.processor.getKey = item=> item.type;
+
+        // call HOOK method before finish to let them customize some values.
+        if (typeof this[queryHook] === 'function') {
+            this[queryHook](qBuilder);
+        }
     }
 
-    browseFeaturedPlaylists(qBuilder) {
-        qBuilder.processor.getItems = response=> response.playlists.items;
-        qBuilder.processor.getPageInfo = response=> response.playlists;
+    compileInsert(qBuilder) {
+        let queryHook = this._key2Method(qBuilder.queryKey);
+        // URL
+        let url = this.buildPath(qBuilder.entitiesTree);
+        url += this.buildFields(qBuilder.fields);
+        url += '?' + this.buildVars(qBuilder.variables.reduce(queryHook));
+
+        qBuilder.url = url;
+
+        // METHOD
+        qBuilder.method = 'PUT';
+
+        // PAYLOAD
+        qBuilder.payload = null;
+
+        // call HOOK method before finish to let them customize some values.
+        if (typeof this[queryHook] === 'function') {
+            this[queryHook](qBuilder);
+        }
     }
 
-    browseNewReleases(qBuilder) {
-        qBuilder.processor.getItems = response=> response.albums.items;
-        qBuilder.processor.getPageInfo = response=> response.albums;
+    compileDelete(qBuilder) {
+        let queryHook = this._key2Method(qBuilder.queryKey);
+        // URL
+        let url = this.buildPath(qBuilder.entitiesTree);
+        url += this.buildFields(qBuilder.fields);
+        url += '?' + this.buildVars(qBuilder.variables.reduce(queryHook));
+
+        qBuilder.url = url;
+
+        // METHOD
+        qBuilder.method = 'DELETE';
+
+        // PAYLOAD
+        qBuilder.payload = null;
+
+        // call HOOK method before finish to let them customize some values.
+        if (typeof this[queryHook] === 'function') {
+            this[queryHook](qBuilder);
+        }
     }
-
-    browseCategories(qBuilder) {
-        qBuilder.processor.getItems = response=> response.categories.items;
-        qBuilder.processor.getPageInfo = response=> response.categories;
-        qBuilder.processor.getKey = ()=> 'category';
-    }
-
-    browsePlaylistCategory(qBuilder) {
-        qBuilder.processor.getItems = response=> response.playlists.items;
-        qBuilder.processor.getPageInfo = response=> response.playlists;
-    }
-
-    getUserFollowedArtists(qBuilder) {
-        qBuilder.processor.getItems = response=> response.artists.items;
-        qBuilder.processor.getPageInfo = response=> response.artists;
-    }
-
-    // Example
-    artistTopTracks(qBuilder) {
-        qBuilder.processor.getItems = response => response.tracks;
-    }
-
-
-
-
-
-
 
     getSelectManyEntities(params) {
         let url = `/${ params.from }/?ids=${ params.where.ids.join(',') }`;
         if (params.where.market) {
             url += `&market=${ params.where.market }`;
         }
-        let getItems = (response) => { return response[params.from]; };
-        let getKey = (item) => { return item.type; };
+        let getItems = response => response[params.from];
+        let getKey = item => item.type;
         return { url, getItems, getKey };
     }
 

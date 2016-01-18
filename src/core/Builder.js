@@ -2,7 +2,6 @@
 import QueryBuilder from './QueryBuilder';
 import Connection from './../services/Connection';
 import Creator from './Creator';
-import SearchParams from './../utils/SearchParams';
 import Paginator from './../utils/Paginator';
 
 class Builder {
@@ -15,7 +14,7 @@ class Builder {
         /**
         * @type {QueryBuilder}
         */
-        this.query = new QueryBuilder;
+        this.query = new QueryBuilder();
         /**
         * Paginator handler
         * @type {Paginator}
@@ -24,19 +23,57 @@ class Builder {
     }
 
     getEntity(id = '', config = {}) {
+        this.query
+            .id('get-entity')
+            .select()
+            .from(this.model.groupName, id)
+            .where(Object.assign(config, { id }))
+            .prepare();
+        return this.runQuery(this.query);
+        /*  .then(this._processSingleEntityResponse.bind(this));*/
+    }
+
+    getManyEntities(ids = '', config = {}) {
+        this.query
+            .id('get-many-entities')
+            .select()
+            .from(this.model.groupName)
+            .where(Object.assign(config, { ids }))
+            .prepare();
+        return this.runQuery(this.query);
+        /*  return this.queryEndpoint(this.query.url, this.query.method)
+                .then(this._processMultipleEntitiesResponse.bind(this));*/
+    }
+
+    queryRaw(expression = '') {
+        // should run a given url, for example on NEXT in pagination
+        return expression;
+    }
+
+    runQuery(query) {
+        return this.queryEndpoint(query.url, query.method)
+            .then((response)=> {
+                let items = this.query.processor.getItems(response);
+                return items && items.constructor === Array
+                    ? this._processMultipleEntitiesResponse(response)
+                    : this._processSingleEntityResponse(response);
+            });
+    }
+
+    _getEntity(id = '', config = {}) {
         //this.query.operation = 'select';
         this.query.from = this.model.name.toLowerCase();
-        this.query.where = new SearchParams(Object.assign(config, {id}));
+        this.query.where = new QueryParams(Object.assign(config, {id}));
         this.query.prepareSelectEntity();
         //next is a single entity response process
         return this.queryEndpoint(this.query.url, this.query.method)
             .then(this._processSingleEntityResponse.bind(this));
     }
 
-    getManyEntities(ids = '', config = {}) {
+    _getManyEntities(ids = '', config = {}) {
         //this.query.operation = 'select';
         this.query.from = this.model.groupName;
-        this.query.where = new SearchParams(Object.assign(config, {ids}));
+        this.query.where = new QueryParams(Object.assign(config, {ids}));
         this.query.prepareSelectManyEntities();
         //next is a multiple entities response process
         return this.queryEndpoint(this.query.url, this.query.method)
@@ -45,58 +82,13 @@ class Builder {
 
     all(config = {}) {
         this.paginator.configure(config);
-        //this.query.operation = 'select';
-        this.query.from = this.model.groupName;
-        this.query.where = new SearchParams(config);
-        this.query.page = this.paginator.getParams();
-        this.query.prepareSearch();
-        //next is a multiple entities response process
-        return this.queryEndpoint(this.query.url, this.query.method)
-            .then(this._processMultipleEntitiesResponse.bind(this));
-    }
-
-    getByKey(queryKey, config) {
-        this.paginator.configure(config);
-        this.query.from = this.model.groupName;
-        this.query.where = new SearchParams(Object.assign(config, {queryKey}));
-        this.query.page = this.paginator.getParams();
-        this.query.prepareSelectByKey();
-        return this.queryEndpoint(this.query.url, this.query.method)
-            .then((response)=> {
-                return this.query.getItems(response).constructor === Array
-                    ? this._processMultipleEntitiesResponse(response)
-                    : this._processSingleEntityResponse(response);
-            });
-    }
-
-    insertByKey(queryKey, config) {
-        this.paginator.configure(config);
-        this.query.from = this.model.groupName;
-        this.query.where = new SearchParams(Object.assign(config, {queryKey}));
-        this.query.page = this.paginator.getParams();
-        this.query.prepareInsertByKey();
-        return this.queryEndpoint(this.query.url, this.query.method)
-            .then(this._processMultipleEntitiesResponse.bind(this));
-    }
-
-    updateByKey(queryKey, config) {
-        this.paginator.configure(config);
-        this.query.to = this.model.groupName;
-        this.query.where = new SearchParams(Object.assign(config, {queryKey}));
-        this.query.page = this.paginator.getParams();
-        this.query.prepareUpdateByKey();
-        return this.queryEndpoint(this.query.url, this.query.method)
-            .then(this._processMultipleEntitiesResponse.bind(this));
-    }
-
-    removeByKey(queryKey, config) {
-        this.paginator.configure(config);
-        this.query.to = this.model.groupName;
-        this.query.where = new SearchParams(Object.assign(config, {queryKey}));
-        this.query.page = this.paginator.getParams();
-        this.query.prepareRemoveByKey();
-        return this.queryEndpoint(this.query.url, this.query.method)
-            .then(this._processMultipleEntitiesResponse.bind(this));
+        this.query
+            .select()
+            .from(this.model.groupName)
+            .where(config)
+            .limit(...this.paginator.getParams())
+            .prepare();
+        return this.runQuery(this.query);
     }
 
     /**
@@ -109,15 +101,16 @@ class Builder {
     *  specific to the endpoint response.
     */
     _processMultipleEntitiesResponse(response) {
-        let pageInfo = this.query.getPageInfo(response);
-        let items = this.query.getItems(response);
+        let pageInfo = this.query.processor.getPageInfo(response);
+        let items = this.query.processor.getItems(response);
         let collection = !items
             ? response
-            : Creator.hydrate(items.map(data => {
-                return { key: this.query.getKey(data), data };
-            }));
+            : this.constructor.hydrate(
+                items,
+                this.query.processor.getKey
+            );
         let retVal = collection;
-        //update paginator
+        // update paginator
         if (pageInfo) {
             this.paginator.update(pageInfo);
             this.paginator.setPage(collection);
@@ -127,9 +120,26 @@ class Builder {
     }
 
     _processSingleEntityResponse(response) {
-        let item = this.query.getItems(response);
-        let key = this.query.getKey(item);
-        return Creator.make(key, item);
+        let item = this.query.processor.getItems(response);
+        let key = item ? this.query.processor.getKey(item) : '';
+        return item
+            ? Creator.make(key, item)
+            : response;
+    }
+
+    static hydrate(itemsCollection = [], getKey = ()=> {}) {
+        return Creator.hydrate(itemsCollection.map(data => {
+            return { key: getKey(data), data };
+        }));
+    }
+
+    /**
+    * External method to run a query with internal data.
+    @todo improve this method name
+    */
+    build() {
+        this.query.prepare();
+        return this.runQuery(this.query);
     }
 
     paginate() {
@@ -139,7 +149,7 @@ class Builder {
             .then(this._processMultipleEntitiesResponse.bind(this));
     }
 
-    queryEndpoint(url, method='GET', payload={}) {
+    queryEndpoint(url, method = 'GET', payload = {}) {
         return Connection.request(url, method, payload);
     }
 

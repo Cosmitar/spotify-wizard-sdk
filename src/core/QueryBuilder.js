@@ -1,113 +1,138 @@
 'use strict';
 import Grammar from './SpotifyGrammar';
+import QueryParams from './../utils/SpotifyParams';
 
-class QueryBuilder {
+class Processor {
     constructor() {
-        //super();
-        this.grammar = new Grammar;
-        /*@todo document this parameters*/
-        this.operation = 'select';//select|insert|update|remove =>by default GET|PUT|POST|DELETE
-        //this.fields = '*';//always
-        this.from = '';//main entity
-        this.where = {};//var pairs, SearchParams
-        this.page = {};//pagination
-        //
-        this.url = '';
-        this.method = this._METHODS[this.operation];
-        this.payload;
-        //interface methods
         this.getItems = ()=> {};
         this.getPageInfo = ()=> {};
         this.getKey = ()=> {};
     }
+}
 
-    get _METHODS() {
-        return {select: 'GET', insert: 'PUT', update: 'POST', remove: 'DELETE'};
+class QueryBuilder {
+    constructor() {
+
+        /**
+        * The endpoint query and response grammar instance.
+        * @type {Grammar}
+        */
+        this.grammar = new Grammar();
+
+        /**
+        * The operation to perform.
+        * @type {string}
+        */
+        this.operation = '';
+
+        /**
+        * Entities collection with order as hierarchy tree.
+        * Key -> Value <=> Entity Name -> Entity Id.
+        * @type {Map}
+        */
+        this.entitiesTree = new Map();
+
+        /**
+        * Variables on WHERE conditions. Came from QueryParams reducer.
+        * @type {QueryParams}
+        */
+        this.variables = new QueryParams();
+
+        /**
+        * Fields tree, usually just one field.
+        * @type {Map}
+        */
+        this.fields = new Set();
+
+        /**
+        * Object with pagination information.
+        * @type {Object}
+        */
+        this.limit = { size: 1, offser: 0 }; // should include pagination token?
+
+        /**
+        * Key for link the query from grammar and search param objects.
+        * @type {string}
+        */
+        this.queryKey = 'default';
+
+        // CONNECTION params
+        this.url = '';
+        this.method = '';
+        this.payload = {};
+
+        // PROCESSOR - interface methods
+        this.processor = new Processor();
+    }
+
+    select() {
+        this.operation = 'select';
+        this.compiler = this.grammar.compileSelect;
+        return this;
+    }
+
+    insert() {
+        this.operation = 'insert';
+        this.compiler = this.grammar.compileInsert;
+        return this;
     }
 
     update() {
-        getInterface(this.lastPreparation);
+        this.operation = 'update';
+        this.compiler = this.grammar.compileUpdate;
+        return this;
     }
 
-    getGrammarParams() {
-        return {
-            from: this.from,
-            where: this.where,
-            page: this.page
-        };
+    delete() {
+        this.operation = 'delete';
+        this.compiler = this.grammar.compileDelete;
+        return this;
+    }
+
+    table(entityName = '', entityValue = null) {
+        this.entitiesTree.set(entityName, entityValue);
+        return this;
+    }
+
+    // alias for TABLE
+    from(...params) {
+        return this.table(...params);
+    }
+
+    into(...params) {
+        return this.table(...params);
+    }
+
+    field(fieldName) {
+        this.fields.add(fieldName);
+        return this;
+    }
+
+    where(params) {
+        this.variables = new QueryParams(params);
+        return this;
+    }
+
+    limit(size = 1, offset = 0) {
+        this.limit = { size, offset };
+        return this;
+    }
+
+    id(key) {
+        this.queryKey = key;
+        return this;
+    }
+
+    prepare() {
+        this.compiler.apply(this.grammar, [this]);
     }
 
     setInterface(handler) {
         this.lastPreparation = handler;
-        Object.assign(
-            this,
-            handler.apply(this.grammar, [this.getGrammarParams()])
-        );
-    }
-
-    prepareSearch() {
-        this.method = this._METHODS.select;
-        this.setInterface(this.grammar.getSearch);
-    }
-
-    prepareSelectEntity() {
-        this.method = this._METHODS.select;
-        this.setInterface(this.grammar.getSelectEntity);
-    }
-
-    prepareInsertEntity() {
-        this.method = this._METHODS.insert;
-        this.setInterface(this.grammar.getWriteEntityQuery);
-    }
-
-    prepareUpdateEntity() {
-        this.method = this._METHODS.update;
-        this.setInterface(this.grammar.getUpdateEntity);
-    }
-
-    prepareRemoveEntity() {
-        this.method = this._METHODS.remove;
-        this.setInterface(this.grammar.getRemoveEntity);
-    }
-
-    prepareSelectManyEntities() {
-        this.method = this._METHODS.select;
-        this.setInterface(this.grammar.getSelectManyEntities);
-    }
-
-    prepareInsertManyEntities() {
-        this.method = this._METHODS.insert;
-        this.setInterface(this.grammar.getInsertManyEntities);
-    }
-
-    prepareUpdateManyEntities() {
-        this.method = this._METHODS.update;
-        this.setInterface(this.grammar.getUpdateManyEntities);
-    }
-
-    prepareRemoveManyEntities() {
-        this.method = this._METHODS.remove;
-        this.setInterface(this.grammar.getRemoveManyEntities);
-    }
-
-    prepareSelectByKey() {
-        this.method = this._METHODS.select;
-        this.setInterface(this.grammar.getSelectByKey);
-    }
-
-    prepareInsertByKey() {
-        this.method = this._METHODS.insert;
-        this.setInterface(this.grammar.getInsertByKey);
-    }
-
-    prepareUpdateByKey() {
-        this.method = this._METHODS.update;
-        this.setInterface(this.grammar.getUpdateByKey);
-    }
-
-    prepareRemoveByKey() {
-        this.method = this._METHODS.remove;
-        this.setInterface(this.grammar.getRemoveByKey);
+        /* Object.assign(
+            this,*/
+        handler.apply(this.grammar, [this]);
+        /* ); */
     }
 }
 

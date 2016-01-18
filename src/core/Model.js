@@ -32,9 +32,9 @@ class StaticModel {
     * @param {string} id Endpoint ID.
     * @return {Promise}
     */
-    static find(id) {
+    static find(id, config = {}) {
         let builder = new Builder(this);
-        return builder.getEntity(id);
+        return builder.getEntity(id, config);
     }
 
     /**
@@ -55,16 +55,16 @@ class StaticModel {
     */
     static where(queryString, params = {}) {
         let builder = new Builder(this);
-        //builder.relation = 'search';//search,artist-top-track,artist-albums
-        //builder.config = params;
-        //builder.factory = this;
-        return builder.all(Object.assign(params, {q: queryString}));
+        // builder.relation = 'search';//search,artist-top-track,artist-albums
+        // builder.config = params;
+        // builder.factory = this;
+        return builder.all(Object.assign(params, { q: queryString }));
     }
 }
 
 class ConcreteModel extends StaticModel {
 
-    constructor(data={}) {
+    constructor(data = {}) {
         super();
         /**
         * Flag if model is a simplified object or not.
@@ -89,7 +89,7 @@ class ConcreteModel extends StaticModel {
     _massAssign(data) {
         let notFillable = this.constructor.getNotFillable() || [];
         for (let el in data) {
-            if (notFillable.indexOf(el) === -1 && typeof this[ el ] != 'function') {
+            if (notFillable.indexOf(el) === -1 && typeof this[ el ] !== 'function') {
                 this[ el ] = data[ el ];
             }
         }
@@ -97,5 +97,5 @@ class ConcreteModel extends StaticModel {
 }
 Creator.defaultFactory(ConcreteModel);
 
-export {StaticModel};
+export { StaticModel };
 export default ConcreteModel;

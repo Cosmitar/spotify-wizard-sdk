@@ -1,9 +1,15 @@
 import Artist from './entities/Artist';
 import Album from './entities/Album';
 import Playlist from './entities/Playlist';
+import Category from './entities/Category';
 import Browse from './entities/Browse';
-import {Profile, Me} from './entities/Profile';
+import { Profile, Me } from './entities/Profile';
 import Session from './services/Session';
+
+/*Session.config({
+    clientId: '1dd4ae27b3fc480ebf627679e5bb0e17',
+    secretId: '31e8696e70574648b55b6fcc7c5b1135'
+});*/
 
 function OAUTH(scopes = '') {
     Session.config({
@@ -25,7 +31,7 @@ function OAUTH(scopes = '') {
 // ------------------------------------------------
 // GET AN ALBUM
 // @see https://developer.spotify.com/web-api/get-album/
-Album.find('0sNOF9WDwhWunNAHPD3Baj')
+Album.find('0sNOF9WDwhWunNAHPD3Baj', {market: 'AR'})
 .then(album => console.log(album));
 
 // ------------------------------------------------
@@ -80,7 +86,8 @@ Artist.find('0OdUWJ0sBjDrqHygGUXeCF')
 
 // ------------------------------------------------
 // GET A LIST OF FEATURED PLAYLISTS
-// @see https://developer.spotify.com/web-api/get-list-featured-playlists/
+// @see https://developer.spotify.com/web-api/get-list-featured-playlists
+
 OAUTH();
 Browse.getFeaturedPlaylists()
 .then(page => {
@@ -142,7 +149,7 @@ Me.following()
 OAUTH('user-follow-modify');
 Artist.find('74ASZWbe4lXaubB36ztrGX')
 .then(artist => {
-    console.log(artist);
+    console.log(`adding "${artist.name}"`);
     Me.follow(artist)
     .then(response => {
         console.log('success');
@@ -155,7 +162,7 @@ Artist.find('74ASZWbe4lXaubB36ztrGX')
 OAUTH('user-follow-modify');
 Artist.find('74ASZWbe4lXaubB36ztrGX')
 .then(artist => {
-    console.log(artist);
+    console.log(`unfollowing "${artist.name}"`);
     Me.unfollow(artist)
     .then(response => {
         console.log(response);
@@ -166,32 +173,33 @@ Artist.find('74ASZWbe4lXaubB36ztrGX')
 // CHECK IF CURRENT USER FOLLOWS ARTISTS OR USERS
 // @see https://developer.spotify.com/web-api/check-current-user-follows/
 OAUTH('user-follow-read');
-Artist.find('74ASZWbe4lXaubB36ztrGX')
-.then(artist => {
-    console.log(artist);
-    Me.isFollowing(artist)
+Artist.findMany(['74ASZWbe4lXaubB36ztrGX', '0OdUWJ0sBjDrqHygGUXeCF'])
+.then(artists => {
+    console.log(artists);
+    Me.amIFollowing(artists)
     .then(response => {
         console.log(response);
     });
 });
-*/
+
 // ------------------------------------------------
 // FOLLOW A PLAYLIST
 // @see https://developer.spotify.com/web-api/follow-playlist/
 OAUTH('playlist-modify-public');
 //OAUTH('playlist-modify-private');
+
 /*Profile.findMe()
 .then(me => {*/
-Playlist.find('2v3iNvBX8Ay1Gt2uXtUKUT', 'jmperezperez')
+/*Playlist.find('2v3iNvBX8Ay1Gt2uXtUKUT', 'jmperezperez')
     .then(playlist => {
         playlist.follow().then(response => {
             console.log(response);
-        });
+        });*/
         /*me.follow(playlist)
         .then(response => {
             console.log(response);
         });*/
-    });
+/*    });*/
 /*});*/
 /*
 // ------------------------------------------------
